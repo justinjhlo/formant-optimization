@@ -13,7 +13,7 @@
 # 2 July, 2023:
 # to work in conjunction with a TextGrid, extracting and optimizing formants
 # only in non-empty intervals of a selected tier instead of whole sound file
-#
+# (output Table now contains interval labels in first column)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 ### IMPORTANT ###
@@ -51,7 +51,7 @@ for i_int from 1 to n_intervals
 
 		table_names$[n_nonempty] = "'fullsound$'_'i_int'_formants"
 
-		@formantOptimize: "'fullsound$'_'i_int'", ceil_lo, ceil_hi, timestep
+		@formantOptimizeLabel: "'fullsound$'_'i_int'", curr_label$, ceil_lo, ceil_hi, timestep
 		
 		# clean up
 		select Sound 'fullsound$'_'i_int'
@@ -85,6 +85,15 @@ if n_nonempty > 0
 endif
 
 ### core function definition ###
+procedure formantOptimizeLabel: .filename$, .label$, .ceil_lo, .ceil_hi, .timestep
+	@formantOptimize: .filename$, .ceil_lo, .ceil_hi, .timestep
+	select Table '.filename$'_formants
+	Insert column... 1 label
+	.n_row = Get number of rows
+	for i from 1 to .n_row
+		Set string value... i label '.label$'
+	endfor
+endproc
 
 procedure formantOptimize: .filename$, .ceil_lo, .ceil_hi, .timestep
 	# create baseline formant object
