@@ -7,20 +7,84 @@
 #
 # Updates
 # 26 January, 2023:  changed estimation of the point of measurement stability
+#
+#
+# modified by Justin J. H. Lo
+# 2 July, 2023:
+# to work in conjunction with a TextGrid, extracting and optimizing formants
+# only in non-empty intervals of a selected tier instead of whole sound file
+#
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 ### IMPORTANT ###
-### Select a sound object in the Praat window before running script
+### Select a Sound object and a TextGrid in the Praat window before running script
 ###
 
 # parameters
 ceil_lo = 3500
 ceil_hi = 6000
 timestep = 0.005
+tier_extract = 1
 
-filename$ = selected$("Sound")
+fullsound$ = selected$("Sound")
+tgname$ = selected$("TextGrid")
 
-@formantOptimize: filename$, ceil_lo, ceil_hi, timestep
+select TextGrid 'tgname$'
+n_intervals = Get number of intervals... tier_extract
+n_nonempty = 0
+
+for i_int from 1 to n_intervals
+	select TextGrid 'tgname$'
+	curr_label$ = Get label of interval... tier_extract i_int
+
+	# only operate on non-empty intervals
+	if curr_label$ <> ""
+		n_nonempty = n_nonempty + 1
+
+		int_start = Get start time of interval... tier_extract i_int
+		int_end = Get end time of interval... tier_extract i_int
+
+		# extract interval and optimize formants on extracted sound
+		select Sound 'fullsound$'
+		Extract part: int_start - 0.025, int_end + 0.025, "rectangular", 1, 1
+		Rename... 'fullsound$'_'i_int'
+
+		table_names$[n_nonempty] = "'fullsound$'_'i_int'_formants"
+
+		@formantOptimize: "'fullsound$'_'i_int'", ceil_lo, ceil_hi, timestep
+		
+		# clean up
+		select Sound 'fullsound$'_'i_int'
+		Remove
+	endif
+endfor
+
+# combine results
+if n_nonempty > 0
+	select Table 'table_names$[1]'
+	if n_nonempty > 1
+		for i from 2 to n_nonempty
+			curr_tname$ = table_names$['i']
+			plus Table 'curr_tname$'
+		endfor
+	endif
+	Append
+	Rename... 'fullsound$'_formants
+
+	# clean up
+		select Table 'table_names$[1]'
+	if n_nonempty > 1
+		for i from 2 to n_nonempty
+			curr_tname$ = table_names$['i']
+			plus Table 'curr_tname$'
+		endfor
+	endif
+	Remove
+
+	select Table 'fullsound$'_formants
+endif
+
+### core function definition ###
 
 procedure formantOptimize: .filename$, .ceil_lo, .ceil_hi, .timestep
 	# create baseline formant object
