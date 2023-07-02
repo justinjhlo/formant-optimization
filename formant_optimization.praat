@@ -20,11 +20,16 @@
 ### Select a Sound object and a TextGrid in the Praat window before running script
 ###
 
+# prompt user to enter tier to extract formants from
+form Choose tier to extract and optimize formants
+	natural Enter_tier 1
+endform
+
 # parameters
 ceil_lo = 3500
 ceil_hi = 6000
 timestep = 0.005
-tier_extract = 1
+tier_extract = enter_tier
 
 fullsound$ = selected$("Sound")
 tgname$ = selected$("TextGrid")
